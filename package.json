@@ -1,0 +1,22 @@
+{
+  "name": "mosh",
+  "version": "1.0.0",
+  "description": "Datamosh an image by damaging real JPEG scan data, in the browser.",
+  "license": "MIT",
+  "author": "Daniel Hebberd",
+  "keywords": [
+    "datamosh",
+    "glitch",
+    "jpeg",
+    "canvas",
+    "browser"
+  ],
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.0"
+  }
+}

@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mosh - datamosh an image by damaging real JPEG scan data</title>
+    <meta
+      name="description"
+      content="Datamosh an image in the browser by overwriting bytes of real JPEG scan data. Nothing is uploaded. The picture never leaves the page."
+    />
+    <meta name="theme-color" content="#101012" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="mosh" />
+    <meta
+      property="og:description"
+      content="Datamosh an image in the browser by damaging real JPEG scan data. The tearing, the displaced blocks and the smear are all the decoder's."
+    />
+    <meta property="og:image" content="docs/screenshot.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20fill='%23101012'/%3E%3Crect%20x='4'%20y='6'%20width='24'%20height='6'%20fill='%23ca1f7b'/%3E%3Crect%20x='10'%20y='14'%20width='22'%20height='5'%20fill='%23e8e8ea'/%3E%3Crect%20y='21'%20width='18'%20height='5'%20fill='%232ec4b6'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #101012;
+        --panel: #17171b;
+        --line: #2a2a31;
+        --ink: #e8e8ea;
+        --muted: #8d8d99;
+        --accent: #ca1f7b;
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.55 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+
+      header {
+        padding: 1.4rem 1.5rem 0.9rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.15rem;
+        letter-spacing: 0.01em;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 68ch;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: 20rem minmax(0, 1fr);
+        gap: 1.25rem;
+        padding: 1.25rem 1.5rem 2.5rem;
+        align-items: start;
+      }
+
+      @media (max-width: 900px) {
+        main {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 0.5rem;
+        padding: 1rem;
+      }
+
+      .panel h2 {
+        margin: 0 0 0.75rem;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .panel + .panel {
+        margin-top: 1rem;
+      }
+
+      label.dial {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.2rem 0.5rem;
+        margin-bottom: 0.7rem;
+        font-size: 0.82rem;
+      }
+
+      label.dial output {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      label.dial input[type='range'] {
+        grid-column: 1 / -1;
+        width: 100%;
+        accent-color: var(--accent);
+        margin: 0;
+      }
+
+      label.check {
+        display: flex;
+        gap: 0.5rem;
+        align-items: start;
+        margin-bottom: 0.6rem;
+        font-size: 0.82rem;
+      }
+
+      label.check input {
+        accent-color: var(--accent);
+        margin-top: 0.2rem;
+      }
+
+      label.check span small {
+        display: block;
+        color: var(--muted);
+        font-size: 0.74rem;
+        line-height: 1.4;
+      }
+
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      button {
+        font: inherit;
+        font-size: 0.82rem;
+        color: var(--ink);
+        background: #23232a;
+        border: 1px solid var(--line);
+        border-radius: 0.3rem;
+        padding: 0.4rem 0.7rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        border-color: var(--accent);
+      }
+
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      #stage {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: #000 repeating-conic-gradient(#141418 0% 25%, #0d0d10 0% 50%) 0 0 / 24px 24px;
+        min-height: 20rem;
+        display: grid;
+        place-items: center;
+      }
+
+      #stage canvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+
+      #drop {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        color: var(--muted);
+        pointer-events: none;
+        padding: 2rem;
+      }
+
+      #stage.has-image #drop {
+        display: none;
+      }
+
+      #stage.dragging {
+        outline: 2px dashed var(--accent);
+        outline-offset: -6px;
+      }
+
+      dl.report {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.25rem 0.75rem;
+        margin: 0;
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      dl.report dt {
+        color: var(--muted);
+      }
+
+      dl.report dd {
+        margin: 0;
+      }
+
+      .warn {
+        color: #ffb454;
+      }
+
+      a {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>mosh</h1>
+      <p>
+        Datamosh an image by damaging real JPEG scan data. This page encodes the picture to a JPEG, overwrites a few
+        bytes of the entropy-coded scan, and asks the browser to decode the result. Nothing here draws the effect
+        &mdash; the tearing, the displaced blocks and the smear are all the decoder&rsquo;s.
+      </p>
+    </header>
+
+    <main>
+      <div>
+        <section class="panel">
+          <h2>Image</h2>
+          <div class="row">
+            <button id="pick" class="primary">Choose image…</button>
+            <button id="sample">Use a test card</button>
+          </div>
+          <input id="file" type="file" accept="image/*" hidden />
+          <p style="margin: 0.7rem 0 0; color: var(--muted); font-size: 0.78rem">
+            Or drop one anywhere, or paste one from the clipboard. Nothing is uploaded. The picture never leaves the
+            page.
+          </p>
+        </section>
+
+        <section class="panel">
+          <h2>Damage</h2>
+          <label class="dial">
+            <span>Wounds</span><output id="out-wounds"></output>
+            <input id="wounds" type="range" min="1" max="12" step="1" value="2" />
+          </label>
+          <label class="dial">
+            <span>JPEG quality</span><output id="out-quality"></output>
+            <input id="quality" type="range" min="5" max="95" step="1" value="40" />
+          </label>
+          <label class="dial">
+            <span>Earliest wound</span><output id="out-from"></output>
+            <input id="from" type="range" min="0" max="99" step="1" value="45" />
+          </label>
+          <label class="dial">
+            <span>Latest wound</span><output id="out-to"></output>
+            <input id="to" type="range" min="1" max="100" step="1" value="95" />
+          </label>
+          <div class="row">
+            <button id="reroll" class="primary">Re-roll</button>
+            <button id="save">Save PNG</button>
+            <button id="saveJpg">Save the broken JPEG</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Judgement</h2>
+          <label class="check">
+            <input id="keep" type="checkbox" checked />
+            <span
+              >Keep it readable
+              <small
+                >Reject a throw whose brightness strays too far from the original, then roll again. A wound can crush
+                the frame to black, blow it out to white, or leave a readable tear. Which of the three you get is pure
+                luck of the byte it hit.</small
+              ></span
+            >
+          </label>
+          <label class="check">
+            <input id="animate" type="checkbox" />
+            <span
+              >Animate
+              <small
+                >Re-roll continuously. A rate cap and a brightness bound hold the animation so that it cannot strobe.
+                See the note below.</small
+              ></span
+            >
+          </label>
+        </section>
+
+        <section class="panel">
+          <h2>What happened</h2>
+          <dl class="report">
+            <dt>Image</dt>
+            <dd id="r-size">&mdash;</dd>
+            <dt>JPEG</dt>
+            <dd id="r-bytes">&mdash;</dd>
+            <dt>Scan starts</dt>
+            <dd id="r-scan">&mdash;</dd>
+            <dt>Bytes hit</dt>
+            <dd id="r-landed">&mdash;</dd>
+            <dt>Throws</dt>
+            <dd id="r-tries">&mdash;</dd>
+            <dt>Result</dt>
+            <dd id="r-status">&mdash;</dd>
+          </dl>
+        </section>
+      </div>
+
+      <div id="stage">
+        <canvas id="view" role="img" aria-label="The moshed picture"></canvas>
+        <div id="drop">
+          <strong>Drop an image here</strong>
+          <span>or choose one, paste one, or use the test card</span>
+        </div>
+      </div>
+    </main>
+
+    <script src="mosh.js"></script>
+    <script>
+      (function () {
+        'use strict';
+
+        const stage = document.getElementById('stage');
+        const view = document.getElementById('view');
+        const ctx = view.getContext('2d');
+        const file = document.getElementById('file');
+
+        const dials = {
+          wounds: document.getElementById('wounds'),
+          quality: document.getElementById('quality'),
+          from: document.getElementById('from'),
+          to: document.getElementById('to'),
+        };
+        const outs = {
+          wounds: document.getElementById('out-wounds'),
+          quality: document.getElementById('out-quality'),
+          from: document.getElementById('out-from'),
+          to: document.getElementById('out-to'),
+        };
+        const keepBox = document.getElementById('keep');
+        const animateBox = document.getElementById('animate');
+        const report = {
+          size: document.getElementById('r-size'),
+          bytes: document.getElementById('r-bytes'),
+          scan: document.getElementById('r-scan'),
+          landed: document.getElementById('r-landed'),
+          tries: document.getElementById('r-tries'),
+          status: document.getElementById('r-status'),
+        };
+
+        /**
+         * The picture as loaded, at working size. Everything is moshed from
+         * this rather than from the visible canvas, or each re-roll would be
+         * damaging the previous roll's damage and the picture would decay
+         * away within a few seconds.
+         */
+        const source = document.createElement('canvas');
+        const sourceCtx = source.getContext('2d');
+        let loaded = false;
+
+        /** Big images are slow to encode and decode; this is plenty to look at. */
+        const MAX_SIDE = 1600;
+
+        /**
+         * Animation is capped rather than run flat out. The brightness bound
+         * below is the real safeguard, but a still image gives it nothing to
+         * follow - with no movement underneath, every re-roll is pure change,
+         * so the rate matters here in a way it does not for live video.
+         */
+        const FRAME_MS = 180;
+        const STEADY = 12;
+
+        const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (still) {
+          animateBox.checked = false;
+          animateBox.disabled = true;
+          animateBox.closest('label').querySelector('small').textContent =
+            'Disabled: your system asks for reduced motion.';
+        }
+
+        let timer = 0;
+        let busy = false;
+        let previous = null;
+        let lastBytes = null;
+
+        function showDials() {
+          outs.wounds.textContent = dials.wounds.value;
+          outs.quality.textContent = (dials.quality.value / 100).toFixed(2);
+          outs.from.textContent = dials.from.value + '%';
+          outs.to.textContent = dials.to.value + '%';
+        }
+
+        function draw(bitmap) {
+          if (view.width !== source.width || view.height !== source.height) {
+            view.width = source.width;
+            view.height = source.height;
+          }
+          ctx.clearRect(0, 0, view.width, view.height);
+          ctx.drawImage(bitmap, 0, 0, view.width, view.height);
+        }
+
+        function say(result) {
+          report.size.textContent = source.width + ' x ' + source.height;
+          report.bytes.textContent = (result.size / 1024).toFixed(1) + ' kB';
+          report.scan.textContent = result.scan ? 'byte ' + result.scan : 'not found';
+          report.landed.textContent = String(result.landed);
+          report.tries.textContent = String(result.tries);
+          if (result.ok) {
+            report.status.textContent = 'decoded';
+            report.status.className = '';
+          } else {
+            const why = {
+              decode: 'the decoder gave up on every throw',
+              keep: 'every throw was too far from the original',
+              steady: 'every throw jumped too far from the last frame',
+              'no-scan': 'no scan found. Is this a JPEG that the walk understands?',
+            };
+            report.status.textContent = why[result.rejected] || 'nothing shown';
+            report.status.className = 'warn';
+          }
+        }
+
+        async function roll() {
+          if (!loaded || busy) return;
+          busy = true;
+          try {
+            const from = Math.min(dials.from.value, dials.to.value) / 100;
+            const to = Math.max(dials.from.value, dials.to.value) / 100;
+            const result = await Mosh.mosh(source, {
+              quality: dials.quality.value / 100,
+              wounds: Number(dials.wounds.value),
+              from,
+              to,
+              keep: keepBox.checked ? 26 : 0,
+              steady: animateBox.checked ? STEADY : 0,
+              previous,
+              tries: keepBox.checked ? 5 : 1,
+            });
+            say(result);
+            if (result.ok) {
+              draw(result.bitmap);
+              result.bitmap.close();
+              previous = result.brightness;
+              lastBytes = result.bytes;
+            }
+          } finally {
+            busy = false;
+          }
+        }
+
+        function pump() {
+          clearInterval(timer);
+          timer = 0;
+          previous = null;
+          if (animateBox.checked && !still) timer = setInterval(roll, FRAME_MS);
+        }
+
+        function useImage(bitmap) {
+          const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+          source.width = Math.max(8, Math.round(bitmap.width * scale));
+          source.height = Math.max(8, Math.round(bitmap.height * scale));
+          sourceCtx.clearRect(0, 0, source.width, source.height);
+          sourceCtx.drawImage(bitmap, 0, 0, source.width, source.height);
+          if (bitmap.close) bitmap.close();
+          loaded = true;
+          stage.classList.add('has-image');
+          previous = null;
+          roll();
+        }
+
+        function load(blob) {
+          createImageBitmap(blob).then(useImage, () => {
+            report.status.textContent = 'that file would not decode as an image';
+            report.status.className = 'warn';
+          });
+        }
+
+        /**
+         * A procedural test card, so the demo shows something without a file.
+         * Deliberately full of the things that make a mosh legible: flat
+         * blocks of colour for the smear to inherit, hard edges for the tear
+         * to cut, and a gradient to show the banding.
+         */
+        function testCard() {
+          const c = document.createElement('canvas');
+          c.width = 1200;
+          c.height = 800;
+          const g = c.getContext('2d');
+
+          const sky = g.createLinearGradient(0, 0, 0, 800);
+          sky.addColorStop(0, '#12303f');
+          sky.addColorStop(1, '#c8dbe4');
+          g.fillStyle = sky;
+          g.fillRect(0, 0, 1200, 800);
+
+          const colours = ['#ca1f7b', '#f5a623', '#2ec4b6', '#e8e8ea', '#3d348b'];
+          for (let i = 0; i < 5; i++) {
+            g.fillStyle = colours[i];
+            g.fillRect(80 + i * 210, 120, 170, 170);
+          }
+
+          g.fillStyle = '#0d0d10';
+          g.beginPath();
+          g.moveTo(0, 640);
+          g.lineTo(300, 430);
+          g.lineTo(560, 610);
+          g.lineTo(840, 380);
+          g.lineTo(1200, 620);
+          g.lineTo(1200, 800);
+          g.lineTo(0, 800);
+          g.closePath();
+          g.fill();
+
+          g.fillStyle = '#0d0d10';
+          g.font = '700 130px ui-sans-serif, system-ui, sans-serif';
+          g.textBaseline = 'middle';
+          g.fillText('MOSH', 80, 370);
+
+          for (let i = 0; i < 24; i++) {
+            g.fillStyle = i % 2 ? '#0d0d10' : '#e8e8ea';
+            g.fillRect(80 + i * 44, 700, 44, 60);
+          }
+          return c;
+        }
+
+        document.getElementById('pick').addEventListener('click', () => file.click());
+        file.addEventListener('change', () => {
+          if (file.files && file.files[0]) load(file.files[0]);
+        });
+        document.getElementById('sample').addEventListener('click', () => useImage(testCard()));
+        document.getElementById('reroll').addEventListener('click', roll);
+
+        document.getElementById('save').addEventListener('click', () => {
+          if (!loaded) return;
+          const a = document.createElement('a');
+          a.download = 'mosh.png';
+          a.href = view.toDataURL('image/png');
+          a.click();
+        });
+
+        document.getElementById('saveJpg').addEventListener('click', () => {
+          if (!lastBytes) return;
+          // The damaged bytes themselves, not a re-encode of the decoded
+          // result - so the file you get is the broken one, and every decoder
+          // that opens it will make its own mind up about what it says.
+          const url = URL.createObjectURL(new Blob([lastBytes], { type: 'image/jpeg' }));
+          const a = document.createElement('a');
+          a.download = 'mosh.jpg';
+          a.href = url;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        });
+
+        for (const dial of Object.values(dials)) {
+          dial.addEventListener('input', () => {
+            showDials();
+            if (!animateBox.checked) roll();
+          });
+        }
+        keepBox.addEventListener('change', roll);
+        animateBox.addEventListener('change', pump);
+
+        document.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          stage.classList.add('dragging');
+        });
+        document.addEventListener('dragleave', () => stage.classList.remove('dragging'));
+        document.addEventListener('drop', (e) => {
+          e.preventDefault();
+          stage.classList.remove('dragging');
+          const dropped = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (dropped) load(dropped);
+        });
+        document.addEventListener('paste', (e) => {
+          const items = e.clipboardData && e.clipboardData.files;
+          if (items && items[0]) load(items[0]);
+        });
+
+        showDials();
+        useImage(testCard());
+      })();
+    </script>
+  </body>
+</html>

@@ -2,11 +2,13 @@
 
 Datamosh an image by damaging real JPEG scan data, in the browser.
 
-![The demo, showing a test card with a tear across it, displaced blocks and a colour smear running to the right edge.](docs/screenshot.png)
+**[Try it](https://tokyodaninjapan.github.io/mosh/)**
 
-Open `index.html`. There is no build, no server and no dependencies. Double-clicking the file works, which is why this
-is a classic script rather than a module. Drop in an image, paste one, or use the test card. Nothing is uploaded. The
-picture never leaves the page.
+[![The demo, showing a test card with a tear across it, displaced blocks and a colour smear running to the right edge.](docs/screenshot.png)](https://tokyodaninjapan.github.io/mosh/)
+
+Or open `index.html` from a clone. There is no build, no server and no dependencies. Double-clicking the file works,
+which is why this is a classic script rather than a module. Drop in an image, paste one, or use the test card. Nothing
+is uploaded. The picture never leaves the page.
 
 ## What it actually does
 

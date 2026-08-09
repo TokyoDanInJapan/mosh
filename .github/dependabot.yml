@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # Prettier is the only dependency, and it is a development one, so monthly
+  # is often enough to be worth reading.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+
+  # Actions are pinned to commit SHAs in the workflows. Dependabot rewrites
+  # both the SHA and the version comment, which is the only practical way to
+  # keep a pinned action up to date.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

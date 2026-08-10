@@ -11,7 +11,28 @@
     "canvas",
     "browser"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TokyoDanInJapan/mosh.git"
+  },
+  "homepage": "https://github.com/TokyoDanInJapan/mosh#readme",
+  "bugs": {
+    "url": "https://github.com/TokyoDanInJapan/mosh/issues"
+  },
   "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./mosh.js": "./mosh.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "mosh.js",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "format": "prettier --write .",
     "check": "prettier --check ."

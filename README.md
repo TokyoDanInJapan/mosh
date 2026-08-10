@@ -77,7 +77,7 @@ movement underneath, every re-roll is pure change. Over live video, the bound al
 
 ## Using mosh.js directly
 
-`mosh.js` sets `window.Mosh` and depends on nothing.
+`mosh.js` sets `globalThis.Mosh` and depends on nothing.
 
 ```js
 const result = await Mosh.mosh(canvas, {
@@ -107,6 +107,25 @@ decays to nothing within a few seconds. The demo keeps an untouched source canva
 **Reuse the wounds to animate.** Pass the `wounds` array back in, and the damage keeps its position while the picture
 underneath changes. Re-roll the wounds instead, and the tear leaps somewhere new every frame. A wound holds a _fraction_
 of the scan rather than an index, so you can apply it to a later encoding of a different picture.
+
+### Installing it
+
+There is nothing to install to use the demo. To depend on it from a project, take a tag rather than a branch, so a later
+change here cannot reach a build that was not asking for it:
+
+```sh
+npm install "github:TokyoDanInJapan/mosh#v1.0.0"
+```
+
+`mosh.js` is still the source, and it is still a classic script. `index.js` is a wrapper over it for bundlers: it runs
+the script and republishes what the script sets on `globalThis`, so both of these give you the same object.
+
+```js
+import { mosh, makeWound } from 'mosh';
+import Mosh from 'mosh';
+```
+
+The package is not on npm, and `private` is set so it cannot be pushed there by accident.
 
 ## Development
 

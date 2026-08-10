@@ -114,7 +114,7 @@ There is nothing to install to use the demo. To depend on it from a project, tak
 change here cannot reach a build that was not asking for it:
 
 ```sh
-npm install "github:TokyoDanInJapan/mosh#v1.0.0"
+npm install "github:TokyoDanInJapan/mosh#v1.1.0"
 ```
 
 `mosh.js` is still the source, and it is still a classic script. `index.js` is a wrapper over it for bundlers: it runs
@@ -125,17 +125,27 @@ import { mosh, makeWound } from 'mosh';
 import Mosh from 'mosh';
 ```
 
+`index.d.ts` ships beside it, so a TypeScript project gets the options, the report and the rejection reasons without
+declaring anything of its own.
+
 The package is not on npm, and `private` is set so it cannot be pushed there by accident.
 
 ## Development
 
-The shipped code has no dependencies. Prettier is the only development tool, and it keeps the formatting consistent:
+The shipped code has no dependencies. The two development tools are Prettier, which keeps the formatting consistent, and
+TypeScript, which does not compile anything here - it only checks that `index.d.ts` still describes the library. Both
+run in CI:
 
 ```sh
 npm install
-npm run format   # rewrite the files
-npm run check    # check them, as CI does
+npm run format         # rewrite the files
+npm run check          # check them, as CI does
+npm run check:types    # just the declarations
 ```
+
+The declarations are hand-written, because a classic script cannot carry its own. `types/check.ts` uses every export
+with the options a real caller passes, and is never bundled and never run: if it compiles, the types hold together. Add
+an export and it belongs there too, or nothing will notice when the declaration drifts.
 
 ## Licence
 

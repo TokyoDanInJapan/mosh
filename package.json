@@ -1,6 +1,6 @@
 {
   "name": "mosh",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Datamosh an image by damaging real JPEG scan data, in the browser.",
   "license": "MIT",
   "author": "Daniel Hebberd",
@@ -23,21 +23,29 @@
   "type": "module",
   "main": "./index.js",
   "exports": {
-    ".": "./index.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
     "./mosh.js": "./mosh.js",
     "./package.json": "./package.json"
   },
   "files": [
     "index.js",
+    "index.d.ts",
     "mosh.js",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "format": "prettier --write .",
-    "check": "prettier --check ."
+    "check": "npm run check:format && npm run check:types",
+    "check:format": "prettier --check .",
+    "check:types": "tsc --noEmit"
   },
   "devDependencies": {
-    "prettier": "^3.9.0"
-  }
+    "prettier": "^3.9.0",
+    "typescript": "^6.0.3"
+  },
+  "types": "./index.d.ts"
 }

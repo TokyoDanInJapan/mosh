@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  format:
+  check:
     runs-on: ubuntu-latest
     steps:
       # Actions are pinned to a commit, not a tag. A tag can be moved to point

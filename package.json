@@ -44,7 +44,7 @@
     "check:types": "tsc --noEmit"
   },
   "devDependencies": {
-    "prettier": "^3.9.0",
+    "prettier": "^3.9.9",
     "typescript": "^6.0.3"
   },
   "types": "./index.d.ts"
